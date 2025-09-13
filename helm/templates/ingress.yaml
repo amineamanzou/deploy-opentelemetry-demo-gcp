@@ -1,0 +1,24 @@
+{{- if eq .Values.ingress.class "gce" }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: otel-demo
+  annotations:
+    kubernetes.io/ingress.class: {{ .Values.ingress.class }}
+    kubernetes.io/ingress.global-static-ip-name: {{ .Values.ingress.staticIpName }}
+spec:
+  rules:
+  {{- $domain := .Values.domain }}
+  {{- range $host, $svc := .Values.services }}
+    - host: {{ printf "%s.%s" $host $domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $svc }}
+                port:
+                  number: 80
+  {{- end }}
+{{- end }}

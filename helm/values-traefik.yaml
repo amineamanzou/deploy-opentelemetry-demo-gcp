@@ -1,0 +1,6 @@
+traefik:
+  enabled: true
+
+ingress:
+  class: traefik
+  staticIpName: ""
