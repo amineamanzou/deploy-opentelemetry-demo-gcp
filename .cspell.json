@@ -1,0 +1,16 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "gcloud",
+    "kubectl",
+    "kubeconfig",
+    "opentelemetry",
+    "oteldemo",
+    "gke",
+    "workload",
+    "nip",
+    "oidc",
+    "terraform"
+  ]
+}

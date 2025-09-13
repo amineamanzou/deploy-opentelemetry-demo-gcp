@@ -1,0 +1,80 @@
+version: '3'
+
+dotenv: ['.env']
+
+vars:
+  KUBECONFIG_FILE: kubeconfig
+
+tasks:
+  doctor:
+    cmds:
+      - ./scripts/ensure_tools.sh
+
+  terraform:init:
+    dir: terraform
+    cmds:
+      - terraform init
+
+  terraform:plan:
+    dir: terraform
+    cmds:
+      - terraform plan
+
+  terraform:apply:
+    dir: terraform
+    cmds:
+      - terraform apply -auto-approve
+
+  terraform:destroy:
+    dir: terraform
+    cmds:
+      - read -p 'Are you sure? [y/N] ' ans && [ "$ans" = 'y' ]
+      - terraform destroy -auto-approve
+
+  kubeconfig:store:
+    env:
+      KUBECONFIG: "{{.KUBECONFIG_FILE}}"
+    cmds:
+      - ./scripts/kubeconfig_store.sh ${OTELDEMO_KUBECONFIG_SECRET} {{.KUBECONFIG_FILE}}
+
+  kubeconfig:fetch:
+    env:
+      KUBECONFIG: "{{.KUBECONFIG_FILE}}"
+    cmds:
+      - ./scripts/kubeconfig_fetch.sh ${OTELDEMO_KUBECONFIG_SECRET} {{.KUBECONFIG_FILE}}
+
+  helm:install:
+    deps: [kubeconfig:fetch]
+    env:
+      KUBECONFIG: "{{.KUBECONFIG_FILE}}"
+    cmds:
+      - helm dependency update helm
+      - helm upgrade --install otel-demo helm -f helm/values.yaml --set domain=${OTELDEMO_ROOT_DOMAIN} --set ingress.class=${INGRESS_CLASS} --set ingress.staticIpName=${INGRESS_STATIC_IP_NAME}
+
+  helm:uninstall:
+    deps: [kubeconfig:fetch]
+    env:
+      KUBECONFIG: "{{.KUBECONFIG_FILE}}"
+    cmds:
+      - helm uninstall otel-demo || true
+
+  lint:terraform:
+    dir: terraform
+    cmds:
+      - terraform fmt -check -recursive
+      - tflint
+
+  lint:helm:
+    cmds:
+      - helm lint helm
+
+  lint:md:
+    cmds:
+      - markdownlint-cli2 "**/*.md"
+
+  lint:spell:
+    cmds:
+      - cspell "**/*"
+
+  lint:all:
+    deps: [lint:terraform, lint:helm, lint:md, lint:spell]

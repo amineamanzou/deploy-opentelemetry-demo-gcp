@@ -1,0 +1,51 @@
+name: Helm
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'helm/**'
+  workflow_dispatch:
+    inputs:
+      uninstall:
+        description: 'Uninstall release'
+        required: false
+        default: 'false'
+
+env:
+  KUBECONFIG_FILE: kubeconfig
+  OTELDEMO_KUBECONFIG_SECRET: ${{ secrets.OTELDEMO_KUBECONFIG_SECRET }}
+  OTELDEMO_ROOT_DOMAIN: ${{ vars.OTELDEMO_ROOT_DOMAIN }}
+  INGRESS_CLASS: ${{ vars.INGRESS_CLASS }}
+  INGRESS_STATIC_IP_NAME: ${{ vars.INGRESS_STATIC_IP_NAME }}
+
+jobs:
+  install:
+    if: inputs.uninstall == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+      - name: Fetch kubeconfig
+        run: gcloud secrets versions access latest --secret="$OTELDEMO_KUBECONFIG_SECRET" > $KUBECONFIG_FILE
+      - name: Helm install
+        run: |
+          helm dependency update helm
+          KUBECONFIG=$KUBECONFIG_FILE helm upgrade --install otel-demo helm -f helm/values.yaml --set domain=$OTELDEMO_ROOT_DOMAIN --set ingress.class=$INGRESS_CLASS --set ingress.staticIpName=$INGRESS_STATIC_IP_NAME
+
+  uninstall:
+    if: inputs.uninstall == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+      - name: Fetch kubeconfig
+        run: gcloud secrets versions access latest --secret="$OTELDEMO_KUBECONFIG_SECRET" > $KUBECONFIG_FILE
+      - name: Helm uninstall
+        run: KUBECONFIG=$KUBECONFIG_FILE helm uninstall otel-demo || true
