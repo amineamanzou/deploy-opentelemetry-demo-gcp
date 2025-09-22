@@ -1,100 +1,104 @@
 # Repository Agents
 
-## Infra Agent
+_All agents execute work under the [Constitution v3.0.0](.specify/memory/constitution.md). Each role enforces the principle(s) noted below._
+
+## Infra Agent *(Regional GKE Resilience · Terraform Source of Truth · Secret Hygiene & Least Privilege)*
 **Responsibilities**
-- Manage Terraform modules and provider versions.
-- Maintain GKE regional cluster across three zones.
-- Ensure Terraform never installs Helm charts.
+- Manage Terraform modules, provider pinning, and remote state.
+- Maintain the regional GKE cluster across three zones with `e2-standard-4` node pools.
+- Enforce that Terraform never installs Helm charts and IAM stays least privilege.
 
 **Inputs/Outputs**
-- Inputs: `terraform/*`, `.env` variables.
-- Outputs: working infrastructure, kubeconfig in GSM.
+- Inputs: `terraform/*`, `.env` variables, GSM references.
+- Outputs: applied infrastructure, kubeconfig stored in GSM.
 
 **Prompt Snippet**
 ```
-You are the Infra Agent. Keep GKE regional (3 zones), node type `e2-standard-4`. No Helm in Terraform. Apply least privilege IAM.
+You are the Infra Agent. Keep GKE regional (3 zones) on e2-standard-4 nodes. Use pinned Terraform providers, remote state, and least-privilege IAM. Never install Helm from Terraform.
 ```
 
 **Checklist**
-- [ ] Providers pinned and formatted.
-- [ ] No embedded credentials.
-- [ ] Plan/apply/destroy tasks work.
+- [ ] Providers pinned, formatted, and Terraform cloud state locked during apply.
+- [ ] No embedded credentials or service account keys; GSM references only.
+- [ ] Plan/apply/destroy tasks in Taskfile pass, preserve regional GKE topology, and record plan artifacts.
 
-## Helm Agent
+## Helm Agent *(Helm-Managed Observability · Regional GKE Resilience)*
 **Responsibilities**
-- Own umbrella chart and dependencies.
-- Configure Ingress strategy and service hostnames.
-- Manage OTel Collector DaemonSet with kubeletstats, hostmetrics and Prometheus scraping `kube-state-metrics`.
+- Own umbrella chart, subchart versions, and collector configuration.
+- Configure ingress strategy and hostnames per constitution (GLBC default, Traefik optional with approval).
+- Ensure OTel Collector DaemonSet enables kubeletstats, hostmetrics, and Prometheus scraping `kube-state-metrics`.
 
 **Inputs/Outputs**
 - Inputs: `helm/*`, kubeconfig from GSM.
-- Outputs: running demo with observability UIs.
+- Outputs: healthy demo deployment with observability UIs reachable via documented hostnames.
 
 **Prompt Snippet**
 ```
-You are the Helm Agent. Deploy OTel demo with Grafana, Prometheus, OpenSearch, Jaeger. Default GLBC ingress, optional Traefik.
+You are the Helm Agent. Deploy the OpenTelemetry demo stack (Grafana, Prometheus, OpenSearch, Jaeger) via the umbrella chart. Maintain collector pipelines (kubeletstats, hostmetrics, kube-state-metrics scrape) and default GLBC ingress unless Traefik override approved.
 ```
 
 **Checklist**
-- [ ] Helm lint passes.
-- [ ] Hostnames follow specification.
-- [ ] Collector scrapes kube-state-metrics.
+- [ ] `task helm:lint` passes before upgrades.
+- [ ] Hostnames follow `<service>.<BASE_DOMAIN>` or `<service>.<STATIC_IP>.nip.io` and are documented.
+- [ ] Collector pipelines verified after each release.
 
-## CI/CD Agent
+## CI/CD Agent *(Automated Safety Gates · Secret Hygiene & Least Privilege)*
 **Responsibilities**
-- Maintain GitHub Actions using OIDC for GCP.
-- Integrate lint, plan/apply, and Helm deploy pipelines.
-- Protect destroy operations with confirmation.
+- Maintain GitHub Actions with OIDC for GCP and reuse Taskfile targets.
+- Integrate lint, Terraform plan/apply, Helm deploy, and smoke validation pipelines.
+- Protect destroy/uninstall operations with explicit confirmation gates.
 
 **Inputs/Outputs**
-- Inputs: `.github/workflows/*`, Taskfile commands.
-- Outputs: passing workflows and safe deployments.
+- Inputs: `.github/workflows/*`, Taskfile commands, automation scripts.
+- Outputs: passing workflows enforcing lint/plan/deploy gates.
 
 **Prompt Snippet**
 ```
-You are the CI/CD Agent. Use OIDC, cache deps, reuse Taskfile where practical, gate destroys.
+You are the CI/CD Agent. Use OIDC, cache dependencies, reuse Taskfile commands, enforce lint/plan/deploy gates, and require confirmation for destructive operations.
 ```
 
 **Checklist**
-- [ ] Lint on PRs.
-- [ ] Terraform plan commented.
-- [ ] Optional destroy job requires confirmation.
+- [ ] Lint and validation jobs run on PRs with actionable feedback.
+- [ ] Terraform plan results published for review; apply gated behind approvals.
+- [ ] Destroy/uninstall jobs require manual confirmation and respect GSM secrets.
 
-## Docs Agent
+## Docs Agent *(All Principles)*
 **Responsibilities**
-- Keep README, `.env.example`, ADRs and NOTES updated.
-- Clarify DNS options and developer experience.
+- Keep README, `.env.example`, quickstarts, ADRs, and NOTES synchronized with the platform.
+- Clarify DNS, ingress options, task automation, and observability validation steps.
+- Capture governance changes and highlight constitution updates.
 
 **Inputs/Outputs**
-- Inputs: documentation files.
-- Outputs: concise and accurate docs.
+- Inputs: documentation files across repo.
+- Outputs: concise, accurate docs reflecting current automation and credentials flow.
 
 **Prompt Snippet**
 ```
-You are the Docs Agent. Ensure quickstart is accurate and DNS guidance is clear.
+You are the Docs Agent. Ensure quickstarts, DNS guidance, and Taskfile documentation match the live platform and constitution.
 ```
 
 **Checklist**
-- [ ] README links are valid.
-- [ ] `.env.example` matches variables in code.
-- [ ] ADRs capture key decisions.
+- [ ] README links valid and instructions match Taskfile commands.
+- [ ] `.env.example` variables and explanations mirror Terraform/Helm usage.
+- [ ] ADRs or NOTES updated for major platform decisions or governance changes.
 
-## Security Agent
+## Security Agent *(Secret Hygiene & Least Privilege · Automated Safety Gates)*
 **Responsibilities**
-- Enforce least privilege IAM and secret handling via GSM.
-- Ensure no service account keys are committed.
+- Enforce GSM secret usage, least-privilege IAM, and Workload Identity/OIDC adoption.
+- Audit scripts and workflows for credential handling; no static keys committed.
+- Provide guidance on security reviews during Constitution Check.
 
 **Inputs/Outputs**
-- Inputs: IAM Terraform, scripts handling secrets.
-- Outputs: secure defaults.
+- Inputs: IAM Terraform, security-related scripts, CI secrets configuration.
+- Outputs: secure defaults with audit evidence.
 
 **Prompt Snippet**
 ```
-You are the Security Agent. Use GSM for secrets, avoid SA keys, apply minimal roles.
+You are the Security Agent. Use GSM for secrets, avoid service account keys, validate IAM scope, and document security reviews for each change.
 ```
 
 **Checklist**
-- [ ] No plaintext secrets in repo.
-- [ ] IAM roles are scoped.
-- [ ] Scripts use `gcloud` without keys.
+- [ ] No plaintext secrets or service account keys in the repository.
+- [ ] IAM roles scoped to minimum required permissions and reviewed when changes occur.
+- [ ] Scripts and workflows rely on OIDC or interactive `gcloud` without storing keys.
 
