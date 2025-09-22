@@ -20,3 +20,4 @@ kubeconfig
 
 # AI agents
 .codex/
+.specify/
