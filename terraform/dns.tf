@@ -3,8 +3,8 @@ locals {
 }
 
 resource "google_dns_managed_zone" "oteldemo" {
-  count   = local.use_dns ? 1 : 0
-  name    = "${var.cluster_name}-zone"
+  count    = local.use_dns ? 1 : 0
+  name     = "${var.cluster_name}-zone"
   dns_name = "${var.base_domain}."
 }
 
