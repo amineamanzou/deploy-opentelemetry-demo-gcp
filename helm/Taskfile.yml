@@ -1,0 +1,32 @@
+version: '3'
+
+vars:
+  KUBECONFIG_FILE: kubeconfig
+
+tasks:
+  kubeconfig:store:
+    env:
+      KUBECONFIG: "{{.KUBECONFIG_FILE}}"
+    cmds:
+      - ./scripts/kubeconfig_store.sh ${OTELDEMO_KUBECONFIG_SECRET} {{.KUBECONFIG_FILE}}
+
+  kubeconfig:fetch:
+    env:
+      KUBECONFIG: "{{.KUBECONFIG_FILE}}"
+    cmds:
+      - ./scripts/kubeconfig_fetch.sh ${OTELDEMO_KUBECONFIG_SECRET} {{.KUBECONFIG_FILE}}
+
+  helm:install:
+    deps: [kubeconfig:fetch]
+    env:
+      KUBECONFIG: "{{.KUBECONFIG_FILE}}"
+    cmds:
+      - helm dependency update helm
+      - helm upgrade --install otel-demo helm -f helm/values.yaml --set domain=${OTELDEMO_ROOT_DOMAIN} --set ingress.class=${INGRESS_CLASS} --set ingress.staticIpName=${INGRESS_STATIC_IP_NAME}
+
+  helm:uninstall:
+    deps: [kubeconfig:fetch]
+    env:
+      KUBECONFIG: "{{.KUBECONFIG_FILE}}"
+    cmds:
+      - helm uninstall otel-demo || true

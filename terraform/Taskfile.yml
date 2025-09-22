@@ -1,0 +1,33 @@
+version: '3'
+
+tasks:
+  terraform:init:
+    dir: terraform
+    cmds:
+      - terraform init
+
+  terraform:validate:
+    dir: terraform
+    cmds:
+      - terraform validate
+
+  terraform:fmt:
+    dir: terraform
+    cmds:
+      - terraform fmt
+
+  terraform:plan:
+    dir: terraform
+    cmds:
+      - terraform plan
+
+  terraform:apply:
+    dir: terraform
+    cmds:
+      - terraform apply -auto-approve
+
+  terraform:destroy:
+    dir: terraform
+    cmds:
+      - read -p 'Are you sure? [y/N] ' ans && [ "$ans" = 'y' ]
+      - terraform destroy -auto-approve
