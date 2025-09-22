@@ -80,7 +80,7 @@ tasks:
 
   lint:md:
     cmds:
-      - markdownlint-cli2 "**/*.md"
+      - markdownlint-cli2 "**/*.md" "#.codex/**" "#.specify/**" --config .markdownlint.jsonc
 
   lint:spell:
     cmds:

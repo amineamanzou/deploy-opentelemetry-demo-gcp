@@ -4,7 +4,8 @@
 **Input**: Feature specification from `/specs/001-repository-agents-infra/spec.md`
 
 ## Execution Flow (/plan command scope)
-```
+
+```text
 1. Load feature spec from Input path
    → If not found: ERROR "No feature spec at {path}"
 2. Collect technical context from repository docs
@@ -25,22 +26,26 @@
 ```
 
 **IMPORTANT**: The /plan command STOPS at step 8. Downstream commands:
+
 - Phase 2: /tasks command creates tasks.md
 - Phase 3+: Implementation and validation follow tasks.md
 
 ## Summary
+
 Document and synchronize repository agent contracts, data models, templates, and guidance so they fully embody Constitution v3.0.0 (regional GKE resilience, Terraform-first infra, Helm-managed observability, automation safety gates, and secret hygiene). Outputs include refreshed specs, quickstart, templates, and lint validation.
 
 ## Technical Context
-**Infrastructure Scope**: Terraform configuration under `terraform/` defines GKE regional cluster, networking, IAM, DNS, static IP. Updates focus on documentation of these modules rather than new resources.  
-**Runtime Scope**: Helm umbrella chart in `helm/` deploys the OpenTelemetry demo stack with collector pipelines; guidance must clarify kube-state-metrics scraping and ingress host rules.  
-**Automation Scope**: Taskfile targets (`task terraform:*`, `task helm:*`, `task lint:*`) and GitHub Actions workflows enforce lint/plan/apply/deploy gates with OIDC authentication.  
-**Security Scope**: Google Secret Manager stores kubeconfig and other secrets; IAM bindings managed via Terraform must maintain least-privilege; no service account keys allowed.  
-**Dependencies**: Terraform ≥1.6, Helm ≥3.13, Task ≥3, gcloud SDK, GSM access, markdownlint, cspell, tflint.  
-**Risk & Blast Radius**: Low — documentation and process alignment only; no infrastructure changes, but incorrect guidance could mislead future automation.  
+
+**Infrastructure Scope**: Terraform configuration under `terraform/` defines GKE regional cluster, networking, IAM, DNS, static IP. Updates focus on documentation of these modules rather than new resources.
+**Runtime Scope**: Helm umbrella chart in `helm/` deploys the OpenTelemetry demo stack with collector pipelines; guidance must clarify kube-state-metrics scraping and ingress host rules.
+**Automation Scope**: Taskfile targets (`task terraform:*`, `task helm:*`, `task lint:*`) and GitHub Actions workflows enforce lint/plan/apply/deploy gates with OIDC authentication.
+**Security Scope**: Google Secret Manager stores kubeconfig and other secrets; IAM bindings managed via Terraform must maintain least-privilege; no service account keys allowed.
+**Dependencies**: Terraform ≥1.6, Helm ≥3.13, Task ≥3, gcloud SDK, GSM access, markdownlint, cspell, tflint.
+**Risk & Blast Radius**: Low — documentation and process alignment only; no infrastructure changes, but incorrect guidance could mislead future automation.
 **Open Questions**: Original constitution ratification date unknown (needs historical research).
 
 ## Constitution Check
+
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
 - Regional GKE Resilience: ✅ No infra changes; documentation will reinforce three-zone GKE with `e2-standard-4` node pools managed via Terraform.
@@ -50,7 +55,8 @@ Document and synchronize repository agent contracts, data models, templates, and
 - Secret Hygiene & Least Privilege: ✅ Guidance continues to require GSM and minimal IAM; research task will clarify any outstanding security details.
 
 ## Repository Areas
-```
+
+```text
 terraform/               # GCP infrastructure modules and state configuration
 helm/                    # Umbrella chart and values for observability stack
 .github/workflows/       # CI/CD pipelines (OIDC, lint, plan/apply, deploy)
@@ -59,9 +65,12 @@ README.md, docs/         # Developer and operator documentation
 .specify/                # Templates, scripts, and constitution
 ```
 
-**Structure Decision**: Work spans Terraform (docs + templates), Helm (contracts/guidance), CI/CD automation, documentation, and security processes. No new source-code directories required.
+### Structure Decision
+
+Work spans Terraform (docs + templates), Helm (contracts/guidance), CI/CD automation, documentation, and security processes. No new source-code directories required.
 
 ## Phase 0: Outline & Research
+
 1. **Identify unknowns** from Technical Context → create research tasks per domain (Terraform versions, IaC TDD workflow, performance metrics, observability error context).
 2. **Gather references**:
    - HashiCorp Terraform and Google provider docs for versioning guidance
@@ -70,10 +79,13 @@ README.md, docs/         # Developer and operator documentation
    - Existing Taskfile and workflow definitions
 3. **Record findings** in `research.md` with decision, rationale, alternatives.
 
-**Output**: `research.md` with all NEEDS CLARIFICATION resolved or delegated.
+### Output
+
+`research.md` with all NEEDS CLARIFICATION resolved or delegated.
 
 ## Phase 1: Design & Contracts
-*Prerequisites: research.md complete*
+
+Prerequisite: research.md complete.
 
 1. **Terraform Design**: Document how pinned providers, remote state, and plan/apply review will be communicated in updated docs/templates.
 2. **Helm Design**: Capture ingress hostname rules, collector receivers, and Helm-only deployment instructions for agents and quickstart.
@@ -84,40 +96,51 @@ README.md, docs/         # Developer and operator documentation
    - Run `.specify/scripts/bash/update-agent-context.sh codex`
    - Add only new technologies or tooling introduced in this plan
 
-**Outputs**: Updated design artifacts (data-model, contracts, quickstart) and agent guidance references.
+### Outputs
+
+Updated design artifacts (data-model, contracts, quickstart) and agent guidance references.
 
 ## Phase 2: Task Planning Approach
-*Describe how /tasks will break down the work — do NOT create tasks.md here*
 
-**Task Generation Strategy**:
+Describe how /tasks will break down the work — do NOT create tasks.md here.
+
+### Task Generation Strategy
+
 - Group tasks by Terraform, Helm, Automation, Docs, Security responsibilities.
 - Ensure Terraform plan/test tasks precede apply; Helm lint/smoke tests precede deploy.
 - Include validation tasks (`task lint:all`, documentation checks, governance summaries).
 
-**Ordering Strategy**:
+### Ordering Strategy
+
 - Research completion → contract/data-model alignment → templates and repo guidance sync → documentation refresh → validation.
 - Treat edits to the same file sequentially; use `[P]` only for disjoint files (individual contracts, etc.).
 
-**Estimated Output**: 15–20 ordered tasks covering documentation, template alignment, and validation.
+### Estimated Output
+
+15–20 ordered tasks covering documentation, template alignment, and validation.
 
 ## Phase 3+: Future Implementation
-*Beyond scope of /plan*
 
-**Phase 3**: /tasks command generates tasks.md  
-**Phase 4**: Execute tasks (Terraform, Helm, automation, docs) under constitution principles  
-**Phase 5**: Validate (plans applied, Helm release healthy, smoke tests + lint pass)
+Beyond scope of /plan.
+
+Phase 3: /tasks command generates tasks.md
+Phase 4: Execute tasks (Terraform, Helm, automation, docs) under constitution principles
+Phase 5: Validate (plans applied, Helm release healthy, smoke tests + lint pass)
 
 ## Complexity Tracking
-*Complete only if Constitution Check requires exceptions*
+
+Complete only if Constitution Check requires exceptions.
 
 | Violation | Why Needed | Compensating Controls |
 |-----------|------------|------------------------|
-| _None_ | _N/A_ | _N/A_ |
+| None | N/A | N/A |
 
 ## Progress Tracking
-*Update during execution*
 
-**Phase Status**:
+Update during execution.
+
+### Phase Status
+
 - [X] Phase 0: Research complete (/plan)
 - [X] Phase 1: Design complete (/plan)
 - [X] Phase 2: Task planning strategy captured (/plan)
@@ -125,7 +148,8 @@ README.md, docs/         # Developer and operator documentation
 - [ ] Phase 4: Implementation complete
 - [ ] Phase 5: Validation passed
 
-**Gate Status**:
+### Gate Status
+
 - [X] Initial Constitution Check: PASS
 - [X] Post-Design Constitution Check: PASS
 - [X] All NEEDS CLARIFICATION resolved
