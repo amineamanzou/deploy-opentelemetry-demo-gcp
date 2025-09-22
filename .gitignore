@@ -9,9 +9,14 @@ node_modules/
 # Terraform
 .terraform/
 
+# gCloud
+gke_gcloud_auth_plugin_cache
+
 # Helm
 helm/charts/*.tgz
 
 # Kubeconfig
 kubeconfig
 
+# AI agents
+.codex/
