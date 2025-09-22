@@ -15,6 +15,16 @@ tasks:
     cmds:
       - terraform init
 
+  terraform:validate:
+    dir: terraform
+    cmds:
+      - terraform validate
+
+  terraform:fmt:
+    dir: terraform
+    cmds:
+      - terraform fmt
+
   terraform:plan:
     dir: terraform
     cmds:
