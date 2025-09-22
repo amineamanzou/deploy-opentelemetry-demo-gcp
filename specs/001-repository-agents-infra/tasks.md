@@ -62,8 +62,8 @@
 
 ## Phase 3.5: Validation & Cleanup
 
-- [ ] T014 Run `task lint:all` to confirm Terraform, Helm, markdown, and spell checks pass after documentation updates.
-- [ ] T015 Capture a short summary of constitution alignment and pending follow-ups in the feature change log or PR description before requesting review.
+- [X] T014 Run `task lint:all` to confirm Terraform, Helm, markdown, and spell checks pass after documentation updates.
+- [X] T015 Capture a short summary of constitution alignment and pending follow-ups in the feature change log or PR description before requesting review.
 
 ## Dependencies
 
