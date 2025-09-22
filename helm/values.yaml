@@ -9,43 +9,21 @@ services:
   jaeger: opentelemetry-demo-jaeger-query
   opensearch: opentelemetry-demo-opensearch
 
-opentelemetry-demo:
-  components:
-    grafana:
-      enabled: true
-    prometheus:
-      enabled: true
-    jaeger:
-      enabled: true
-    opensearch:
-      enabled: true
-
 opentelemetry-collector:
-  mode: daemonset
-  config: |
-    receivers:
-      kubeletstats:
-        collection_interval: 10s
-      hostmetrics:
-        collection_interval: 10s
-      prometheus:
-        config:
-          scrape_configs:
-            - job_name: ksm
-              static_configs:
-                - targets: ['kube-state-metrics.kube-system.svc.cluster.local:8080']
-    processors:
-      batch: {}
-    exporters:
-      prometheus:
-        endpoint: 0.0.0.0:8889
-      logging: {}
-    service:
-      pipelines:
-        metrics:
-          receivers: [kubeletstats, hostmetrics, prometheus]
-          processors: [batch]
-          exporters: [prometheus, logging]
+  mode: "daemonset"
+  image:
+    repository: "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-k8s"
+  presets:
+    kubernetesAttributes:
+      enabled: true
+    kubeletMetrics:
+      enabled: true
+    hostMetrics:
+      enabled: true
+    logsCollection:
+      enabled: true
+      includeCollectorLogs: false
+      storeCheckpoints: true
 
 kube-state-metrics:
   releaseNamespace: kube-system
