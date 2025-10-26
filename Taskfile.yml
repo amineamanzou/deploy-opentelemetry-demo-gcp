@@ -27,7 +27,7 @@ tasks:
 
   lint:helm:
     cmds:
-      - helm lint helm
+      - helm lint helm --set-string domain=lint.example.com
 
   lint:md:
     cmds:

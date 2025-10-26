@@ -10,7 +10,7 @@ resource "google_dns_managed_zone" "oteldemo" {
 
 resource "google_dns_record_set" "ingress" {
   count        = local.use_dns ? 1 : 0
-  name         = "*.oteldemo.${var.project_id}.${var.base_domain}."
+  name         = "*.${var.project_id}.${var.base_domain}."
   type         = "A"
   ttl          = 300
   managed_zone = google_dns_managed_zone.oteldemo[0].name

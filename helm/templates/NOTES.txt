@@ -1,6 +1,0 @@
-OpenTelemetry Demo deployed.
-
-Access UIs via:
-{{- range $host, $_ := .Values.services }}
-- http://{{ $host }}.{{ $.Values.domain }}
-{{- end }}

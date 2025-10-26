@@ -63,7 +63,15 @@ task lint:all
 
 ### DNS
 
-If `BASE_DOMAIN` is set, Terraform creates a Cloud DNS managed zone. Delegate the zone to Google Cloud DNS by updating your registrar. Without `BASE_DOMAIN`, hostnames fall back to `<service>.<STATIC_IP>.nip.io`.
+If `BASE_DOMAIN` is set, Terraform creates a Cloud DNS managed zone and a wildcard `*.PROJECT_NAME.BASE_DOMAIN` record that points to the reserved global static IP. Delegate the zone to Google Cloud DNS by updating your registrar. Without `BASE_DOMAIN`, hostnames fall back to `<service>.<STATIC_IP>.nip.io`.
+
+### Ingress Endpoints
+
+The Helm chart publishes the following endpoints through the GKE GLBC ingress by default:
+
+- `argocd.<PROJECT_NAEM>.<BASE_DOMAIN>` – argocd UI
+
+When `BASE_DOMAIN` is unset, the same hosts are rendered against `<STATIC_IP>.nip.io`. Extend or override the list under `helm/values.yaml` → `services`.
 
 ### GitHub Actions
 
