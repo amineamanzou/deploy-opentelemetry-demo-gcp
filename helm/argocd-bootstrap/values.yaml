@@ -1,0 +1,57 @@
+gitops:
+  namespace: argocd
+  project: otel-demo
+  repoURL: https://github.com/amineamanzou/deploy-opentelemetry-demo-gcp.git
+  targetRevision: main
+  destination:
+    server: https://kubernetes.default.svc
+  revisionHistoryLimit: 3
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  hostnames:
+    argocd: ""
+    otelDemo: ""
+otelDemo:
+  enabled: true
+  name: otel-demo
+  namespace: otel-demo
+  path: helm
+  repoURL: ""
+  targetRevision: ""
+  valueFiles:
+    - values.yaml
+  parameters: []
+  additionalValueFiles: []
+  syncWave: "1"
+operator:
+  enabled: true
+  name: opentelemetry-operator
+  namespace: opentelemetry-operator-system
+  repoURL: https://github.com/open-telemetry/opentelemetry-operator.git
+  path: charts/opentelemetry-operator
+  targetRevision: main
+  chart: ""
+  helm:
+    valueFiles: []
+    additionalValueFiles: []
+    parameters: []
+    values: ""
+  syncWave: "2"
+ingress:
+  className: gce
+  staticIpName: ""
+argo-cd:
+  fullnameOverride: argocd
+  crds:
+    install: true
+  server:
+    ingress:
+      enabled: true
+      ingressClassName: ""
+      annotations: {}
+      hosts: []
+      tls: []

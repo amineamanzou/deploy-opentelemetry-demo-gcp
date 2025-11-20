@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: {{ .Values.gitops.project }}
+  namespace: {{ .Values.gitops.namespace }}
+  labels:
+    app.kubernetes.io/name: otel-demo-gitops
+spec:
+  description: GitOps scope for the OpenTelemetry demo and operator
+  sourceRepos:
+    - {{ .Values.gitops.repoURL }}
+    - {{ default .Values.gitops.repoURL .Values.otelDemo.repoURL }}
+    - {{ .Values.operator.repoURL }}
+  destinations:
+    - namespace: "*"
+      server: {{ .Values.gitops.destination.server }}
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"

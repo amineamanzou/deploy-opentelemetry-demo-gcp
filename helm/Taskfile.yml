@@ -21,12 +21,33 @@ tasks:
     env:
       KUBECONFIG: "{{.KUBECONFIG_FILE}}"
     cmds:
-      - helm dependency update helm
-      - helm upgrade --install otel-demo helm -f helm/values.yaml --set ingress.class=${INGRESS_CLASS} --set ingress.staticIpName=${INGRESS_STATIC_IP_NAME}
+      - |
+        set -euo pipefail
+        OTEL_DOMAIN=$(./scripts/render_hostname.sh --context otel)
+        ARGOCD_HOST=$(./scripts/render_hostname.sh --context project --service argocd)
+        helm repo add opentelemetry https://open-telemetry.github.io/opentelemetry-helm-charts --force-update >/dev/null
+        helm repo add prometheus-community https://prometheus-community.github.io/helm-charts --force-update >/dev/null
+        helm repo add traefik https://traefik.github.io/charts --force-update >/dev/null
+        helm repo add argo https://argoproj.github.io/argo-helm --force-update >/dev/null
+        helm dependency update helm >/dev/null
+        helm dependency update helm/argocd-bootstrap >/dev/null
+        helm upgrade --install ${ARGOCD_RELEASE_NAME:-argocd-bootstrap} helm/argocd-bootstrap \
+          --namespace ${ARGOCD_NAMESPACE:-argocd} \
+          --create-namespace \
+          --set-string gitops.repoURL=${GITOPS_REPO_URL:-https://github.com/amineamanzou/deploy-opentelemetry-demo-gcp.git} \
+          --set-string gitops.targetRevision=${GITOPS_TARGET_REVISION:-main} \
+          --set-string gitops.hostnames.otelDemo=${OTEL_DOMAIN} \
+          --set-string gitops.hostnames.argocd=${ARGOCD_HOST} \
+          --set-string ingress.className=${INGRESS_CLASS} \
+          --set-string ingress.staticIpName=${INGRESS_STATIC_IP_NAME} \
+          --set-string argo-cd.server.ingress.ingressClassName=${INGRESS_CLASS} \
+          --set-string argo-cd.server.ingress.annotations.\"kubernetes\\.io/ingress.allow-http\"=\"false\" \
+          --set-string argo-cd.server.ingress.annotations.\"kubernetes\\.io/ingress.global-static-ip-name\"=${INGRESS_STATIC_IP_NAME} \
+          --set-string argo-cd.server.ingress.hosts[0]=${ARGOCD_HOST}
 
   helm:uninstall:
     deps: [kubeconfig:fetch]
     env:
       KUBECONFIG: "{{.KUBECONFIG_FILE}}"
     cmds:
-      - helm uninstall otel-demo || true
+      - helm uninstall ${ARGOCD_RELEASE_NAME:-argocd-bootstrap} --namespace ${ARGOCD_NAMESPACE:-argocd} || true

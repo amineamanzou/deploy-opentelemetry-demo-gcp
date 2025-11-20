@@ -21,6 +21,7 @@ Key variables:
 - `GCP_PROJECT_ID` – your project ID
 - `BASE_DOMAIN` – optional base DNS domain. When unset, ingress uses `nip.io` with the static IP
 - `OTELDEMO_KUBECONFIG_SECRET` – name of GSM secret used for kubeconfig
+- `GITOPS_REPO_URL` / `GITOPS_TARGET_REVISION` – repo and branch/tag Argo CD should sync
 
 ## Usage
 
@@ -41,15 +42,29 @@ After `apply`, store kubeconfig:
 task kubeconfig:store
 ```
 
-### Helm
+### GitOps Bootstrap (Helm)
 
-Fetch kubeconfig from GSM and install charts:
+Fetch kubeconfig from GSM and bootstrap Argo CD, which in turn syncs the demo workloads:
 
 ```bash
 task kubeconfig:fetch
-# deploy demo
 task helm:install
-# remove
+```
+
+`task helm:install` deploys the `helm/argocd-bootstrap` chart. This release installs Argo CD with an ingress and creates two Applications:
+
+- `otel-demo` – points to the Helm chart under `helm/` in this repository (OpenTelemetry Demo + collector).
+- `opentelemetry-operator` – tracks the upstream operator chart from `open-telemetry/opentelemetry-operator`.
+
+Argo CD starts reconciling immediately. Check sync status with:
+
+```bash
+kubectl -n ${ARGOCD_NAMESPACE:-argocd} get applications
+```
+
+To remove Argo CD and halt GitOps reconciliation, run:
+
+```bash
 task helm:uninstall
 ```
 
@@ -61,17 +76,24 @@ Run all linters:
 task lint:all
 ```
 
-### DNS
+### DNS & Hostnames
 
-If `BASE_DOMAIN` is set, Terraform creates a Cloud DNS managed zone and a wildcard `*.PROJECT_NAME.BASE_DOMAIN` record that points to the reserved global static IP. Delegate the zone to Google Cloud DNS by updating your registrar. Without `BASE_DOMAIN`, hostnames fall back to `<service>.<STATIC_IP>.nip.io`.
+If `BASE_DOMAIN` is set, Terraform provisions a managed zone with a wildcard `*.${GCP_PROJECT_ID}.${BASE_DOMAIN}` record that targets the reserved global static IP. Delegate the zone to Google Cloud DNS by updating your registrar. Without `BASE_DOMAIN`, hostnames fall back to `<service>.<STATIC_IP>.nip.io` once the IP is allocated.
+
+`scripts/render_hostname.sh` computes both patterns automatically. Override the defaults by setting `OTELDEMO_ROOT_DOMAIN` or `ARGOCD_HOSTNAME` in `.env` if you need custom naming.
 
 ### Ingress Endpoints
 
-The Helm chart publishes the following endpoints through the GKE GLBC ingress by default:
+GLBC (GCE) Ingress exposes the following hosts:
 
-- `argocd.<PROJECT_NAEM>.<BASE_DOMAIN>` – argocd UI
+- `app.oteldemo.${GCP_PROJECT_ID}.${BASE_DOMAIN}` – web storefront
+- `grafana.oteldemo.${GCP_PROJECT_ID}.${BASE_DOMAIN}` – Grafana UI
+- `prometheus.oteldemo.${GCP_PROJECT_ID}.${BASE_DOMAIN}` – Prometheus UI
+- `jaeger.oteldemo.${GCP_PROJECT_ID}.${BASE_DOMAIN}` – Jaeger query UI
+- `opensearch.oteldemo.${GCP_PROJECT_ID}.${BASE_DOMAIN}` – OpenSearch Dashboards
+- `argocd.${GCP_PROJECT_ID}.${BASE_DOMAIN}` – Argo CD UI
 
-When `BASE_DOMAIN` is unset, the same hosts are rendered against `<STATIC_IP>.nip.io`. Extend or override the list under `helm/values.yaml` → `services`.
+When `BASE_DOMAIN` is unset, the same hosts are rendered against `<STATIC_IP>.nip.io`. Update `helm/values.yaml` (for new services) or `helm/argocd-bootstrap/values.yaml` (for additional Applications) if you need more endpoints or custom routing.
 
 ### GitHub Actions
 
