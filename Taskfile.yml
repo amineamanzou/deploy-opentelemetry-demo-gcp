@@ -1,0 +1,48 @@
+version: '3'
+
+dotenv: ['.env']
+
+includes:
+  helm:
+    taskfile: ./helm/Taskfile.yml
+    flatten: true
+  terraform:
+    taskfile: ./terraform/Taskfile.yml
+    flatten: true
+
+vars:
+  KUBECONFIG_FILE: kubeconfig
+
+tasks:
+  doctor:
+    cmds:
+      - ./scripts/ensure_tools.sh
+
+  lint:terraform:
+    dir: terraform
+    deps:
+      - terraform:fmt
+    cmds:
+      - tflint --recursive
+
+  lint:helm:
+    cmds:
+      - helm repo add opentelemetry https://open-telemetry.github.io/opentelemetry-helm-charts --force-update >/dev/null
+      - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts --force-update >/dev/null
+      - helm repo add traefik https://traefik.github.io/charts --force-update >/dev/null
+      - helm repo add argo https://argoproj.github.io/argo-helm --force-update >/dev/null
+      - helm dependency build helm >/dev/null
+      - helm dependency build helm/argocd-bootstrap >/dev/null
+      - helm lint helm --set-string domain=lint.example.com --set-string ingress.class=gce --set-string ingress.staticIpName=dummy-ip
+      - helm lint helm/argocd-bootstrap --set-string gitops.repoURL=https://example.com/owner/repo.git --set-string gitops.targetRevision=main --set-string gitops.hostnames.otelDemo=demo.lint.example.com --set-string gitops.hostnames.argocd=argocd.lint.example.com --set-string ingress.className=gce --set-string ingress.staticIpName=dummy-ip
+
+  lint:md:
+    cmds:
+      - markdownlint-cli2 "**/*.md" "#.codex/**" "#.specify/**" --config .markdownlint.jsonc
+
+  lint:spell:
+    cmds:
+      - cspell "**/*"
+
+  lint:all:
+    deps: [lint:terraform, lint:helm, lint:md, lint:spell]

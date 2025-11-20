@@ -1,0 +1,43 @@
+{{- if .Values.otelDemo.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ .Values.otelDemo.name }}
+  namespace: {{ .Values.gitops.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.otelDemo.syncWave | quote }}
+  labels:
+    app.kubernetes.io/component: otel-demo
+spec:
+  project: {{ .Values.gitops.project }}
+  destination:
+    server: {{ .Values.gitops.destination.server }}
+    namespace: {{ .Values.otelDemo.namespace }}
+  source:
+    repoURL: {{ default .Values.gitops.repoURL .Values.otelDemo.repoURL }}
+    targetRevision: {{ default .Values.gitops.targetRevision .Values.otelDemo.targetRevision }}
+    path: {{ .Values.otelDemo.path }}
+    helm:
+      valueFiles:
+{{- range .Values.otelDemo.valueFiles }}
+        - {{ . }}
+{{- end }}
+{{- range .Values.otelDemo.additionalValueFiles }}
+        - {{ . }}
+{{- end }}
+      parameters:
+        - name: domain
+          value: {{ required "gitops.hostnames.otelDemo must be defined" .Values.gitops.hostnames.otelDemo }}
+        - name: ingress.class
+          value: {{ .Values.ingress.className }}
+        - name: ingress.staticIpName
+          value: {{ required "ingress.staticIpName must be defined" .Values.ingress.staticIpName }}
+{{- range .Values.otelDemo.parameters }}
+        - name: {{ .name }}
+          value: {{ .value | quote }}
+{{- end }}
+  syncPolicy:
+{{ toYaml .Values.gitops.syncPolicy | indent 4 }}
+  revisionHistoryLimit: {{ .Values.gitops.revisionHistoryLimit }}
+---
+{{- end }}

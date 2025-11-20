@@ -1,0 +1,54 @@
+{{- if .Values.operator.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ .Values.operator.name }}
+  namespace: {{ .Values.gitops.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.operator.syncWave | quote }}
+  labels:
+    app.kubernetes.io/component: opentelemetry-operator
+spec:
+  project: {{ .Values.gitops.project }}
+  destination:
+    server: {{ .Values.gitops.destination.server }}
+    namespace: {{ .Values.operator.namespace }}
+  source:
+    repoURL: {{ .Values.operator.repoURL }}
+    targetRevision: {{ default .Values.gitops.targetRevision .Values.operator.targetRevision }}
+{{- if .Values.operator.path }}
+    path: {{ .Values.operator.path }}
+{{- else }}
+    chart: {{ required "operator.chart must be set when path is empty" .Values.operator.chart }}
+{{- end }}
+{{- $helm := .Values.operator.helm }}
+{{- if or $helm.valueFiles $helm.additionalValueFiles $helm.parameters $helm.values }}
+    helm:
+{{- with $helm.valueFiles }}
+      valueFiles:
+{{- range . }}
+        - {{ . }}
+{{- end }}
+{{- end }}
+{{- with $helm.additionalValueFiles }}
+{{- range . }}
+        - {{ . }}
+{{- end }}
+{{- end }}
+{{- with $helm.parameters }}
+      parameters:
+{{- range . }}
+        - name: {{ .name }}
+          value: {{ .value | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- with $helm.values }}
+      values: |
+{{ . | indent 8 }}
+{{- end }}
+  syncPolicy:
+{{ toYaml .Values.gitops.syncPolicy | indent 4 }}
+  revisionHistoryLimit: {{ .Values.gitops.revisionHistoryLimit }}
+---
+{{- end }}
